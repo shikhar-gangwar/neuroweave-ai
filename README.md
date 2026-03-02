@@ -56,10 +56,14 @@ Natural language interface powered by **Google Gemini 2.5 Flash**. Ask anything 
 - Intelligent fallback when API is unavailable
 - Retry logic with exponential backoff for rate limits
 
+![AI Chat](docs/screenshots/ai_chat.png)
+
 ---
 
 ### 🕸️ Interactive Knowledge Graph
 Force-directed 2D graph mapping **30+ tech concepts** with relationships and mastery indicators. Nodes are color-coded by category with hover tooltips showing descriptions and skill progress.
+
+![Knowledge Graph](docs/screenshots/knowledge_graph.png)
 
 ---
 
@@ -73,6 +77,13 @@ The Code Explorer has **three analysis modes**:
 | **📋 Your Code** | Paste any code snippet, pick from 20 languages, get AI-powered analysis |
 | **📂 Your Project** | Upload an entire project folder for full architecture analysis |
 
+![Code Explorer — Samples](docs/screenshots/code_explorer.png)
+
+#### Paste Your Code
+Paste any code snippet, select from 20 supported languages, and get instant AI analysis.
+
+![Code Explorer — Custom Code](docs/screenshots/code_explorer_custom.png)
+
 #### Project Analyzer
 - Upload any project folder from your computer
 - Browser reads files locally (skips `node_modules`, `.git`, binaries)
@@ -81,10 +92,14 @@ The Code Explorer has **three analysis modes**:
 - **Ask AI questions** about specific files in the context of your project
 - "Analyze File" button for per-file Gemini review
 
+![Code Explorer — Project Upload](docs/screenshots/code_explorer_project.png)
+
 ---
 
 ### 🛤️ Adaptive Learning Path
 AI-generated curriculum based on your knowledge gaps. Each topic includes difficulty badges, estimated completion time, category tags, and real-time mastery progress bars.
+
+![Learning Path](docs/screenshots/learning_path.png)
 
 ---
 
