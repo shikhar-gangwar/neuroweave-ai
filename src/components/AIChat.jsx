@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Bot, User, Clock, Hash, Sparkles } from 'lucide-react';
-import { processQuery } from '../ai/engine';
+import { sendChatQuery } from '../api/client';
 
 const suggestions = [
     'Explain React Hooks',
@@ -11,7 +11,6 @@ const suggestions = [
 ];
 
 function parseMarkdown(text) {
-    // Simple markdown-like rendering
     const lines = text.split('\n');
     const elements = [];
     let inCodeBlock = false;
@@ -60,17 +59,19 @@ function parseMarkdown(text) {
         } else if (line.startsWith('## ')) {
             flushList();
             elements.push(<h3 key={`h2-${i}`}>{formatInline(line.slice(3))}</h3>);
+        } else if (line.startsWith('# ')) {
+            flushList();
+            elements.push(<h3 key={`h1-${i}`}>{formatInline(line.slice(2))}</h3>);
         } else if (/^\d+\.\s/.test(line)) {
             listType = 'ol';
             inList = true;
             listItems.push(formatInline(line.replace(/^\d+\.\s/, '')));
-        } else if (line.startsWith('- ')) {
+        } else if (line.startsWith('- ') || line.startsWith('* ')) {
             listType = 'ul';
             inList = true;
             listItems.push(formatInline(line.slice(2)));
         } else if (line.startsWith('| ') && line.endsWith(' |')) {
             flushList();
-            // Collect table lines
             const tableLines = [line];
             let j = i + 1;
             while (j < lines.length && lines[j].startsWith('|')) {
@@ -79,6 +80,19 @@ function parseMarkdown(text) {
             }
             i = j - 1;
             elements.push(renderTable(tableLines, elements.length));
+        } else if (line.startsWith('> ')) {
+            flushList();
+            elements.push(
+                <blockquote key={`bq-${i}`} style={{
+                    borderLeft: '3px solid var(--accent-primary)',
+                    paddingLeft: 12,
+                    margin: '8px 0',
+                    color: 'var(--text-secondary)',
+                    fontStyle: 'italic',
+                }}>
+                    {formatInline(line.slice(2))}
+                </blockquote>
+            );
         } else if (line.trim()) {
             flushList();
             elements.push(<p key={`p-${i}`}>{formatInline(line)}</p>);
@@ -153,7 +167,7 @@ export default function AIChat() {
         setIsTyping(true);
 
         try {
-            const response = await processQuery(query);
+            const response = await sendChatQuery(query);
             setMessages(prev => [...prev, {
                 role: 'ai',
                 title: response.title,
@@ -162,11 +176,12 @@ export default function AIChat() {
                 relatedTopics: response.relatedTopics,
                 latency: response.latency,
                 queryId: response.queryId,
+                source: response.source,
             }]);
-        } catch {
+        } catch (err) {
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: 'Sorry, I encountered an error processing your query. Please try again.',
+                content: `⚠️ Error: ${err.message}. Make sure the backend server is running (\`npm run server\`).`,
             }]);
         } finally {
             setIsTyping(false);
@@ -191,7 +206,7 @@ export default function AIChat() {
                         <h2 className="chat-welcome__title">How can I help you learn today?</h2>
                         <p className="chat-welcome__desc">
                             Ask me about any programming concept, debug your code, or let me create
-                            a personalized learning path. I understand your knowledge gaps and adapt in real-time.
+                            a personalized learning path. Powered by Google Gemini AI.
                         </p>
                         <div className="chat-welcome__suggestions">
                             {suggestions.map(s => (
@@ -220,7 +235,7 @@ export default function AIChat() {
                                     <pre><code>{msg.codeExample}</code></pre>
                                 )}
                             </div>
-                            {msg.relatedTopics && (
+                            {msg.relatedTopics && msg.relatedTopics.length > 0 && (
                                 <div className="chat-msg__related">
                                     {msg.relatedTopics.map(t => (
                                         <span key={t} className="chat-msg__related-tag">{t}</span>
@@ -232,6 +247,7 @@ export default function AIChat() {
                                     <span><Clock size={12} /> {msg.latency.total}ms total</span>
                                     <span><Hash size={12} /> {msg.queryId}</span>
                                     <span>Inference: {msg.latency.inference}ms</span>
+                                    {msg.source && <span>Source: {msg.source}</span>}
                                 </div>
                             )}
                         </div>

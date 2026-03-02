@@ -1,17 +1,49 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, ChevronRight } from 'lucide-react';
-import { getSkillData } from '../ai/engine';
+import { fetchProgress } from '../api/client';
+import { getSkillData as fallbackSkillData } from '../ai/engine';
 import { groupColors } from '../ai/knowledgeData';
 
 export default function SkillPanel() {
-    const { skills, overallScore, weakAreas, suggestedTopics } = useMemo(() => getSkillData(), []);
+    const [data, setData] = useState(null);
 
+    useEffect(() => {
+        loadProgress();
+        // Refresh every 30 seconds to pick up changes from chat interactions
+        const interval = setInterval(loadProgress, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const loadProgress = () => {
+        fetchProgress()
+            .then(setData)
+            .catch(() => {
+                // Fallback to static data
+                setData(fallbackSkillData());
+            });
+    };
+
+    // Listen for custom refresh events (dispatched after chat interactions)
+    useEffect(() => {
+        const handler = () => loadProgress();
+        window.addEventListener('neuroweave:progress-updated', handler);
+        return () => window.removeEventListener('neuroweave:progress-updated', handler);
+    }, []);
+
+    if (!data) {
+        return (
+            <div className="skill-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                Loading...
+            </div>
+        );
+    }
+
+    const { skills, overallScore, weakAreas, suggestedTopics } = data;
     const circumference = 2 * Math.PI * 52;
     const offset = circumference - (overallScore / 100) * circumference;
 
     return (
         <div className="skill-panel">
-            {/* Overall Score */}
             <div className="skill-panel__section">
                 <div className="skill-panel__title">Knowledge Score</div>
                 <div className="score-circle">
@@ -38,7 +70,6 @@ export default function SkillPanel() {
                 </div>
             </div>
 
-            {/* Skill Breakdown */}
             <div className="skill-panel__section">
                 <div className="skill-panel__title">Skill Breakdown</div>
                 {skills.map(skill => (
@@ -60,7 +91,6 @@ export default function SkillPanel() {
                 ))}
             </div>
 
-            {/* Weak Areas */}
             <div className="skill-panel__section">
                 <div className="skill-panel__title">
                     <AlertTriangle size={13} style={{ display: 'inline', marginRight: 6, color: 'var(--danger)' }} />
@@ -74,7 +104,6 @@ export default function SkillPanel() {
                 ))}
             </div>
 
-            {/* Suggested Topics */}
             <div className="skill-panel__section">
                 <div className="skill-panel__title">
                     <Lightbulb size={13} style={{ display: 'inline', marginRight: 6, color: 'var(--warning)' }} />
