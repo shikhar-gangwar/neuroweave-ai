@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { analyzeCode, analyzeProject, getFileHelp } from '../ai/gemini.js';
+import { analyzeCode, analyzeProject, getFileHelp, reviewProject, generateReadme, explainError } from '../ai/gemini.js';
 import { fileTree, codeSnippets, aiAnnotations } from '../data/codeData.js';
 
 const router = Router();
@@ -93,6 +93,56 @@ router.get('/sample/:fileId', (req, res) => {
         ...snippet,
         annotations: aiAnnotations[fileId] || [],
     });
+});
+
+// PR-style code review
+router.post('/project-review', async (req, res) => {
+    try {
+        const { files, structure } = req.body;
+
+        if (!files || !Array.isArray(files) || !structure) {
+            return res.status(400).json({ error: 'Project files and structure are required' });
+        }
+
+        console.log(`🔍 Code review: ${files.length} files`);
+        const result = await reviewProject({ files, structure });
+        res.json(result);
+    } catch (err) {
+        console.error('Code review error:', err);
+        res.status(500).json({ error: 'Failed to review code' });
+    }
+});
+
+// Auto README generator
+router.post('/generate-readme', async (req, res) => {
+    try {
+        const { files, structure } = req.body;
+        if (!files || !Array.isArray(files) || !structure) {
+            return res.status(400).json({ error: 'Project files and structure are required' });
+        }
+        console.log(`📝 Generating README for ${files.length} files`);
+        const result = await generateReadme({ files, structure });
+        res.json(result);
+    } catch (err) {
+        console.error('README generation error:', err);
+        res.status(500).json({ error: 'Failed to generate README' });
+    }
+});
+
+// Error explainer
+router.post('/explain-error', async (req, res) => {
+    try {
+        const { errorText, language } = req.body;
+        if (!errorText || !errorText.trim()) {
+            return res.status(400).json({ error: 'Error text is required' });
+        }
+        console.log(`🐛 Explaining error (${language || 'auto'})`);
+        const result = await explainError(errorText, language);
+        res.json(result);
+    } catch (err) {
+        console.error('Error explanation error:', err);
+        res.status(500).json({ error: 'Failed to explain error' });
+    }
 });
 
 export default router;

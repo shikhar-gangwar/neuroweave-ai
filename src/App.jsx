@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import MetricsBar from './components/MetricsBar';
 import Sidebar from './components/Sidebar';
 import AIChat from './components/AIChat';
-import KnowledgeGraph from './components/KnowledgeGraph';
 import CodeViewer from './components/CodeViewer';
 import LearningPath from './components/LearningPath';
 import SkillPanel from './components/SkillPanel';
-import { MessageSquare, Network, Code2, Route } from 'lucide-react';
+import { MessageSquare, Code2, Route } from 'lucide-react';
 
 const tabs = [
     { id: 'chat', label: 'AI Chat', icon: MessageSquare },
-    { id: 'graph', label: 'Knowledge Graph', icon: Network },
     { id: 'code', label: 'Code Explorer', icon: Code2 },
     { id: 'path', label: 'Learning Path', icon: Route },
 ];
@@ -21,7 +19,7 @@ export default function App() {
 
     const handleNavClick = (id) => {
         setActiveNavItem(id);
-        if (['chat', 'graph', 'code', 'path'].includes(id)) {
+        if (['chat', 'code', 'path'].includes(id)) {
             setActiveTab(id);
         }
     };
@@ -29,7 +27,6 @@ export default function App() {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'chat': return <AIChat />;
-            case 'graph': return <KnowledgeGraph />;
             case 'code': return <CodeViewer />;
             case 'path': return <LearningPath />;
             default: return <AIChat />;

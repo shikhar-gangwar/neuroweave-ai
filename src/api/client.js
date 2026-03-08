@@ -104,6 +104,30 @@ export async function getProjectFileHelp(code, language = 'javascript', projectC
     });
 }
 
+// Code review API
+export async function reviewProjectAPI(files, structure) {
+    return request('/code/project-review', {
+        method: 'POST',
+        body: JSON.stringify({ files, structure }),
+    });
+}
+
+// Auto README generator
+export async function generateReadmeAPI(files, structure) {
+    return request('/code/generate-readme', {
+        method: 'POST',
+        body: JSON.stringify({ files, structure }),
+    });
+}
+
+// Error explainer
+export async function explainErrorAPI(errorText, language = '') {
+    return request('/code/explain-error', {
+        method: 'POST',
+        body: JSON.stringify({ errorText, language }),
+    });
+}
+
 // Health check
 export async function checkHealth() {
     return request('/health');

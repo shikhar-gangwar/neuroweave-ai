@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    MessageSquare, Network, Code2, Route,
+    MessageSquare, Code2, Route,
     BookOpen, History, Settings, HelpCircle,
     Brain
 } from 'lucide-react';
@@ -8,7 +8,6 @@ import { knowledgeGraph, groupColors } from '../ai/knowledgeData';
 
 const navItems = [
     { id: 'chat', label: 'AI Chat', icon: MessageSquare },
-    { id: 'graph', label: 'Knowledge Graph', icon: Network },
     { id: 'code', label: 'Code Explorer', icon: Code2 },
     { id: 'path', label: 'Learning Path', icon: Route },
 ];

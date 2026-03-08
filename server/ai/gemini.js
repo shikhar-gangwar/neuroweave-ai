@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
-import { chatPrompt, codeAnalysisPrompt, conceptExplainPrompt, learningPathPrompt, projectAnalysisPrompt, fileHelpPrompt } from './prompts.js';
+import { chatPrompt, codeAnalysisPrompt, conceptExplainPrompt, learningPathPrompt, projectAnalysisPrompt, fileHelpPrompt, codeReviewPrompt, readmeGeneratorPrompt, errorExplainerPrompt } from './prompts.js';
 
 dotenv.config();
 
@@ -211,6 +211,109 @@ async function getFileHelp(code, language, projectContext, question) {
     }
 }
 
+async function reviewProject(projectData) {
+    if (!model) {
+        return {
+            review: {
+                summary: 'Connect your Gemini API key for AI-powered code reviews.',
+                score: 0,
+                issues: [],
+                stats: { bugs: 0, warnings: 0, suggestions: 0, security: 0 },
+            },
+            source: 'fallback',
+        };
+    }
+
+    const maxRetries = 3;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const prompt = `${codeReviewPrompt()}\n\n## Project Structure:\n\`\`\`\n${projectData.structure}\n\`\`\`\n\n## File Contents:\n${projectData.files.slice(0, 15).map(f => `### ${f.path} (${f.language})\n\`\`\`${f.language}\n${f.content.slice(0, 3000)}\n\`\`\``).join('\n\n')}`;
+
+            const result = await model.generateContent(prompt);
+            let text = result.response.text().trim();
+
+            // Strip markdown code fences if present
+            text = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+
+            const review = JSON.parse(text);
+            return { review, source: 'gemini' };
+        } catch (err) {
+            const isRateLimit = err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('RESOURCE_EXHAUSTED');
+            if (isRateLimit && attempt < maxRetries - 1) {
+                const delay = (attempt + 1) * 3000;
+                console.log(`⏳ Rate limited on code review, retrying in ${delay / 1000}s...`);
+                await new Promise(r => setTimeout(r, delay));
+                continue;
+            }
+            console.error('Gemini code review error:', err.message);
+            return {
+                review: {
+                    summary: `Review failed: ${err.message}`,
+                    score: 0,
+                    issues: [],
+                    stats: { bugs: 0, warnings: 0, suggestions: 0, security: 0 },
+                },
+                source: 'error',
+            };
+        }
+    }
+}
+
+// --- Generate README ---
+
+async function generateReadme({ files, structure }) {
+    if (!model) {
+        return { readme: `# Project\n\n> ⚠️ AI not available. Add your Gemini API key to generate a README.\n\n## Files\n${structure}` };
+    }
+
+    const systemPrompt = readmeGeneratorPrompt();
+    const fileContents = files.slice(0, 15).map(f =>
+        `### ${f.path} (${f.language})\n\`\`\`${f.language}\n${f.content.substring(0, 3000)}\n\`\`\``
+    ).join('\n\n');
+
+    const userPrompt = `## Project Structure:\n\`\`\`\n${structure}\n\`\`\`\n\n## File Contents:\n${fileContents}`;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'I will generate a professional README.md.' }] }] });
+            const result = await chat.sendMessage(userPrompt);
+            const readme = result.response.text();
+            return { readme };
+        } catch (err) {
+            if (err.message?.includes('429') && attempt < 2) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
+// --- Explain Error ---
+
+async function explainError(errorText, language = '') {
+    if (!model) {
+        return { explanation: `### Error Analysis\n\n\`\`\`\n${errorText}\n\`\`\`\n\n> ⚠️ Add your Gemini API key to get AI-powered error explanations.` };
+    }
+
+    const systemPrompt = errorExplainerPrompt();
+    const userPrompt = `${language ? `Language/Framework: ${language}\n\n` : ''}Error/Stack Trace:\n\`\`\`\n${errorText}\n\`\`\``;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'I will analyze this error and provide a clear explanation with fix suggestions.' }] }] });
+            const result = await chat.sendMessage(userPrompt);
+            return { explanation: result.response.text() };
+        } catch (err) {
+            if (err.message?.includes('429') && attempt < 2) {
+                await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
 // --- Helpers ---
 
 function extractTitle(response) {
@@ -272,4 +375,4 @@ function fallbackCodeAnalysis(code, language) {
     };
 }
 
-export { initGemini, isAvailable, chat, analyzeCode, explainConcept, generateLearningRecommendations, analyzeProject, getFileHelp };
+export { initGemini, isAvailable, chat, analyzeCode, explainConcept, generateLearningRecommendations, analyzeProject, getFileHelp, reviewProject, generateReadme, explainError };
