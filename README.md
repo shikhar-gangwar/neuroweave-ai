@@ -84,6 +84,8 @@ Upload any project folder and unlock **4 sub-tabs** of AI-powered analysis:
 #### 📊 Overview
 Full project architecture analysis by Gemini AI — tech stack detection, file structure breakdown, design patterns, and improvement suggestions.
 
+![Project Overview](screenshots/project_overview.png)
+
 #### 🕸️ Dependency Graph
 Client-side import parser that builds a visual **sequence diagram** showing file dependencies. Supports both **JavaScript/TypeScript** (`import`/`require`) and **Python** (`import`/`from ... import`) projects.
 
@@ -92,7 +94,7 @@ Client-side import parser that builds a visual **sequence diagram** showing file
 - Statistics header (files, connections, entry points, leaf modules)
 - Color-coded icons by file type
 
-![Dependencies View](screenshots/dependencies.png)
+![Dependencies View](screenshots/project_dependencies.png)
 
 #### 🔍 PR-Style Code Review
 AI-powered code review that analyzes your entire project like a senior engineer reviewing a pull request:
